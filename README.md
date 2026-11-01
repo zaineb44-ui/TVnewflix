@@ -97,3 +97,8 @@ The standard player now:
 - After all servers are tried, offers **Retry servers** or **Choose manually**.
 
 Important browser limitation: a website cannot inspect whether a cross-origin iframe's video is visibly playing or producing sound. An iframe `load` event only means its page loaded, not that the movie is playing. Therefore, actual automatic detection is possible only for providers that send supported playback/error messages; the confirmation prompt covers providers that do not expose playback status.
+
+
+## Playback prompt in fullscreen + remote toggle
+
+The playback confirmation prompt is now a child of the video player container, so it remains layered over the video when that container enters browser fullscreen. Use the TV remote's arrow keys to move between YES/NO and OK/Enter to activate. INFO/Menu toggles the prompt; Back toggles it hidden/visible while a confirmation is pending. The prompt remains available until YES or NO is selected.

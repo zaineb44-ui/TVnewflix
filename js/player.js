@@ -12,10 +12,11 @@ function setHealthMessage(title,detail){const t=$('#tvPlaybackStatusTitle'),d=$(
 function showPlaybackCheck(){
  if(healthState!=='checking'||promptVisible)return;
  promptVisible=true;healthState='awaiting-confirmation';
+ const prompt=$('#tvPlaybackCheck');if(prompt)prompt.dataset.awaiting='true';
  setHealthMessage('Is the video playing correctly?','If you can see and hear the movie, choose YES. If it is stuck, blank, or showing an error, choose NO to try another server.');
  const box=$('#tvPlaybackCheck');if(box){box.hidden=false;setTimeout(()=>$('#tvPlaybackYes')?.focus(),80)}
 }
-function hidePlaybackCheck(){const box=$('#tvPlaybackCheck');if(box)box.hidden=true;promptVisible=false}
+function hidePlaybackCheck(){const box=$('#tvPlaybackCheck');if(box){box.hidden=true;box.dataset.awaiting='false'}promptVisible=false}
 function markPlaybackWorking(){
  if(!providerKey)return;
  clearHealthTimers();healthState='working';hidePlaybackCheck();
@@ -31,7 +32,7 @@ function markPlaybackFailed(reason='The server did not start the video.'){
  if(!next){
    setHealthMessage('No more servers to try',`Tried ${triedProviders.length} servers. You can retry the list or choose a server manually.`);
    const box=$('#tvPlaybackCheck');if(box){box.hidden=false;$('#tvPlaybackStatusTitle').textContent='No working server found';$('#tvPlaybackStatusText').textContent=`${reason} All available servers have been tried.`;$('#tvPlaybackYes').textContent='Retry servers';$('#tvPlaybackNo').textContent='Choose manually';$('#tvPlaybackYes').focus()}
-   promptVisible=true;healthState='exhausted';return;
+   promptVisible=true;healthState='exhausted';const prompt=$('#tvPlaybackCheck');if(prompt)prompt.dataset.awaiting='true';return;
  }
  toast(`${P()[failed]?.label||'Server'} did not work · switching to ${P()[next]?.label||'another server'}`);
  setHealthMessage('Trying another server…',`${P()[failed]?.label||'Previous server'} did not work. Loading ${P()[next]?.label||'next server'}.`);
