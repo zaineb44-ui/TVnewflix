@@ -1,0 +1,62 @@
+# NewFlix Ultimate 2026 Update
+
+This package is a complete static front-end rebuild around the supplied NewFlix/Supabase/TMDB architecture.
+
+## Biggest upgrades
+- New **Documentaries** navbar section with documentary movies and docuseries.
+- Universal instant search suggestions and a full mixed movie/series search page.
+- Separate normal player and Watch Together player.
+- Continue Watching on the home page with progress bars and resume-from-last-position.
+- Preset avatar gallery plus custom avatar upload.
+- Cross-device playback preferences after running `supabase/upgrade.sql`.
+- Data Saver mode, accent themes, compact catalog mode, and preferred source controls.
+- Surprise Me button.
+- Richer title pages with trailer, cast and similar titles.
+- Quick “My List” button on catalog cards.
+- Responsive redesign using the supplied NewFlix visual language and favicon.
+
+## Deploy
+1. Back up your existing project.
+2. Run `supabase/upgrade.sql` in Supabase SQL Editor.
+3. Copy this package into your project/deployment.
+4. Confirm `js/config.js` contains the correct Supabase project and TMDB credentials.
+5. Deploy to Vercel.
+
+## Database
+The only new database requirements are profile preference columns and the avatar Storage bucket/policies. The migration is additive and does not delete data.
+
+## Important player note
+Third-party iframe providers control whether their domains allow embedding. A website cannot override a provider's CSP/X-Frame-Options from client JavaScript. The separated Watch Together player therefore uses only the providers already marked as controllable in `js/providers.js` and includes provider failover behavior from the previous rebuild.
+
+
+## Adaptive Connection Engine
+- Same-origin staged speed test with Network Information API hints when available.
+- Automatically selects Full, Balanced or Lite rendering.
+- Lite mode disables animation/blur-heavy effects for faster browsing.
+- Normal and Watch Together source recommendations change with the measured connection.
+- Settings includes manual overrides, automatic source selection and a re-test button.
+- Speed results are device-local and expire after 30 minutes. Only the user's Auto/manual preference is synced through Supabase.
+
+## Additional providers reviewed from TomasTNunes/TMDB-Player
+The upstream project currently defines VixSrc, MoviesAPI, VidSrc, VidEasy, VidFast and VidLink server URLs.
+
+This NewFlix build already included MoviesAPI, VidFast and VidLink. The normal player now also includes VixSrc, VidSrc and VidEasy.
+
+VidEasy is kept only as a temporary manual fallback and is not automatically recommended. The upstream repository still uses an older `vidfast.pro` URL; NewFlix keeps its newer `vidfast.vc` integration.
+
+The newly added sources are normal-player fallbacks only. They are not added to Watch Together unless a documented parent play/pause/seek API is available.
+
+## VixSrc blocking and adaptive-mode revision
+VixSrc was removed from the selectable source list after real-world access blocking was reported. The build does not attempt to bypass ISP or provider blocking.
+
+The UI now presents three choices: Auto, Normal and Slow. Auto classifies the current connection; Normal keeps the full animated interface; Slow disables animation/blur and prioritizes adaptive-quality sources.
+
+Verified source strategy:
+- StreamVault: primary Slow-mode source; official docs state HLS adaptive bitrate, 12+ source racing/fallback and watch-party controls.
+- MoviesAPI: primary Normal-mode source; official docs state quality defaults to Auto/adaptive and expose full postMessage controls.
+- VidFast: adaptive-capable fallback already used by NewFlix.
+- VidZen: verified full-control fallback.
+- VidLink: verified event/resume fallback.
+- VidScene remains a fallback but can be frame-blocked in some networks, so it is ranked last in the normal player.
+
+NewFlix cannot force a third-party iframe to a particular bitrate. For adaptive providers, the embedded player itself selects video quality based on throughput.

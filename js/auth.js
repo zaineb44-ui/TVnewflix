@@ -1,0 +1,3 @@
+async function signup(name,email,password){const base=(name||'user').toLowerCase().replace(/[^a-z0-9_]/g,'').slice(0,20)||'user';const {data,error}=await sb.auth.signUp({email,password,options:{data:{name,full_name:name,username:base}}});if(error)return{success:false,error:error.message};return{success:true,user:data.user}}
+async function signin(email,password){const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)return{success:false,error:error.message};return{success:true,user:data.user}}
+window.signup=signup;window.signin=signin;
