@@ -102,3 +102,20 @@ Important browser limitation: a website cannot inspect whether a cross-origin if
 ## Playback prompt in fullscreen + remote toggle
 
 The playback confirmation prompt is now a child of the video player container, so it remains layered over the video when that container enters browser fullscreen. Use the TV remote's arrow keys to move between YES/NO and OK/Enter to activate. INFO/Menu toggles the prompt; Back toggles it hidden/visible while a confirmation is pending. The prompt remains available until YES or NO is selected.
+
+
+## Sign in with email, username, OR display name
+
+The sign-in form accepts all three identifiers:
+- Email: uses Supabase Auth email/password sign-in directly.
+- Username: resolved through the private `newflix_username_index`.
+- Display name: resolved by exact case-insensitive matching against `profiles.display_name` on the server.
+
+Display names are not required to be unique. If two or more accounts share the same display name, sign-in returns an ambiguity message and asks the user to use their unique username or email.
+
+To deploy this update:
+1. Run the updated `supabase/upgrade.sql` in Supabase SQL Editor (this also backfills missing display names from Auth user metadata).
+2. Deploy the updated Edge Function: `supabase functions deploy username-login`.
+3. Redeploy the website to Vercel.
+
+The Edge Function uses the service-role key server-side only; it does not return account email addresses during identifier lookup.

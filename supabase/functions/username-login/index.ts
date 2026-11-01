@@ -1,24 +1,93 @@
-// Deploy: supabase functions deploy username-login
+// Deploy with: supabase functions deploy username-login
+// Resolves a unique username or display name server-side; never exposes account emails.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const corsHeaders={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
-const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...corsHeaders,"Content-Type":"application/json"}});
-Deno.serve(async(req:Request)=>{
-  if(req.method==="OPTIONS")return new Response("ok",{headers:corsHeaders});
-  if(req.method!=="POST")return json({error:"Method not allowed."},405);
-  try{
-    const {username,password}=await req.json();const clean=String(username||"").trim().replace(/^@/,"").toLowerCase();const pass=String(password||"");
-    if(!/^[a-z0-9_]{3,24}$/.test(clean)||!pass)return json({error:"Enter a valid username and password."},400);
-    const url=Deno.env.get("SUPABASE_URL")!,anonKey=Deno.env.get("SUPABASE_ANON_KEY")!,serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    if(!url||!anonKey||!serviceKey)return json({error:"Username sign-in is not configured on the server."},500);
-    const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
-    const {data:mapping,error:lookupError}=await admin.from("newflix_username_index").select("user_id").eq("username",clean).maybeSingle();
-    if(lookupError){console.error("Username index lookup failed:",lookupError.message);return json({error:"Username sign-in is not configured. Run the database upgrade first."},503);}
-    if(!mapping?.user_id)return json({error:"Username not found."},404);
-    const {data:account,error:accountError}=await admin.auth.admin.getUserById(mapping.user_id);
-    if(accountError||!account.user?.email){console.error("Account lookup failed:",accountError?.message);return json({error:"Could not find the account for this username."},404);}
-    const client=createClient(url,anonKey,{auth:{persistSession:false,autoRefreshToken:false}});
-    const {data:signedIn,error:signInError}=await client.auth.signInWithPassword({email:account.user.email,password:pass});
-    if(signInError||!signedIn.session)return json({error:"Incorrect username or password."},401);
-    return json({session:signedIn.session,user:signedIn.user});
-  }catch(error){console.error("username-login error:",error);return json({error:"Unexpected username sign-in error."},500);}
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "Method not allowed." }, 405);
+
+  try {
+    const { identifier, password } = await req.json();
+    const raw = String(identifier || "").trim();
+    const clean = raw.replace(/^@/, "").toLowerCase();
+    const pass = String(password || "");
+    if (!raw || raw.length > 100 || !pass) {
+      return json({ error: "Enter a valid username/display name and password." }, 400);
+    }
+
+    const url = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    if (!url || !anonKey || !serviceKey) {
+      console.error("Username login function is missing Supabase environment variables.");
+      return json({ error: "Sign-in service is not configured on the server." }, 500);
+    }
+
+    const admin = createClient(url, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    let userId: string | null = null;
+
+    // Username lookup is exact and takes precedence over display-name matching.
+    if (/^[a-z0-9_]{3,24}$/.test(clean)) {
+      const { data: usernameRow, error: usernameError } = await admin
+        .from("newflix_username_index")
+        .select("user_id")
+        .eq("username", clean)
+        .maybeSingle();
+      if (usernameError) {
+        console.error("Username lookup failed:", usernameError.message);
+        return json({ error: "Sign-in index is unavailable. Run the database migration." }, 503);
+      }
+      userId = usernameRow?.user_id || null;
+    }
+
+    // If no username matched, look for an exact case-insensitive display name.
+    if (!userId) {
+      const { data: matches, error: displayError } = await admin
+        .from("profiles")
+        .select("id")
+        .ilike("display_name", raw.replace(/[\\%_]/g, "\\$&"))
+        .limit(2);
+      if (displayError) {
+        console.error("Display-name lookup failed:", displayError.message);
+        return json({ error: "Display-name lookup is unavailable. Run the database migration." }, 503);
+      }
+      if (!matches || matches.length === 0) return json({ error: "Account not found." }, 404);
+      if (matches.length > 1) return json({ error: "Display name is not unique." }, 409);
+      userId = matches[0].id;
+    }
+
+    const { data: account, error: accountError } = await admin.auth.admin.getUserById(userId);
+    if (accountError || !account.user?.email) {
+      console.error("Could not resolve auth account:", accountError?.message);
+      return json({ error: "Account not found." }, 404);
+    }
+
+    const publicClient = createClient(url, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: signedIn, error: signInError } = await publicClient.auth.signInWithPassword({
+      email: account.user.email,
+      password: pass,
+    });
+    if (signInError || !signedIn.session) return json({ error: "Incorrect password." }, 401);
+
+    return json({ session: signedIn.session, user: signedIn.user });
+  } catch (error) {
+    console.error("identifier-login error:", error);
+    return json({ error: "Unexpected sign-in error." }, 500);
+  }
 });

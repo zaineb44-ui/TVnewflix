@@ -252,3 +252,27 @@ insert into public.newflix_username_index(username,user_id)
 select lower(trim(p.username)), p.id from public.profiles p join auth.users u on u.id=p.id
 where p.username is not null and lower(trim(p.username)) ~ '^[a-z0-9_]{3,24}$'
 on conflict do nothing;
+
+
+-- ============================================================
+-- DISPLAY NAME SIGN-IN SUPPORT
+-- Existing profiles get a display name from Auth metadata where missing.
+-- Display names are intentionally NOT unique; the login function reports
+-- ambiguity and asks users to use their unique username or email instead.
+-- ============================================================
+alter table public.profiles add column if not exists display_name text;
+
+update public.profiles p
+set display_name = coalesce(
+  nullif(trim(p.display_name), ''),
+  nullif(trim(u.raw_user_meta_data->>'display_name'), ''),
+  nullif(trim(u.raw_user_meta_data->>'full_name'), ''),
+  nullif(trim(u.raw_user_meta_data->>'name'), '')
+)
+from auth.users u
+where u.id = p.id
+  and (p.display_name is null or trim(p.display_name) = '');
+
+create index if not exists newflix_profiles_display_name_lookup
+  on public.profiles (lower(trim(display_name)))
+  where display_name is not null and trim(display_name) <> '';
