@@ -202,3 +202,17 @@ html[data-performance="lite"] .source-ping{box-shadow:none!important}
 .server-picker-open{overflow:hidden}
 .tv-mode .tv-server-dialog{box-shadow:none;backdrop-filter:none}
 @media(max-width:650px){.tv-server-options{grid-template-columns:1fr}.tv-server-dialog{width:96vw}.tv-server-footer{gap:12px}}
+
+
+/* Playback confirmation and recovery flow */
+.tv-playback-check[hidden]{display:none!important}
+.tv-playback-check{position:fixed;inset:0;z-index:10020;display:grid;place-items:center;padding:4vw;background:rgba(0,0,0,.94)}
+.tv-playback-check-card{width:min(760px,94vw);padding:clamp(24px,4vw,46px);border:2px solid #424d60;border-radius:16px;background:#111722;color:#fff}
+.tv-playback-check-card h2{font-size:clamp(26px,3.2vw,42px);margin:12px 0}
+.tv-playback-check-card p{font-size:clamp(17px,1.7vw,22px);line-height:1.5;color:#c4ccda}
+.tv-playback-actions{display:flex;gap:16px;flex-wrap:wrap;margin:26px 0 18px}
+.tv-playback-actions .btn{min-height:64px;padding:16px 26px;font-size:clamp(17px,1.6vw,22px);font-weight:800}
+.tv-playback-check-card>small{color:#9da9ba;font-size:14px}
+.tv-playback-check :focus-visible{outline:4px solid #ffe06a!important;outline-offset:5px}
+.tv-mode .tv-playback-check-card{box-shadow:none;backdrop-filter:none}
+@media(max-width:650px){.tv-playback-actions{display:grid;grid-template-columns:1fr}.tv-playback-actions .btn{width:100%}}

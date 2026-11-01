@@ -84,3 +84,16 @@ Username sign-in resolves accounts on the server and does not expose email addre
 5. Test with an existing account username and its password. Email sign-in continues to work.
 
 The SQL migration backfills usernames from `profiles.username` for existing accounts. Confirm that each account has a username saved there before testing.
+
+
+## Playback health check and automatic server fallback
+
+The standard player now:
+- Switches immediately when a provider sends a recognized playback error event.
+- Treats a provider `ready`, `play`, or `playing` postMessage event as a positive playback signal.
+- Shows a TV-remote-friendly **“Is the video playing correctly?”** prompt after 16 seconds if no positive playback signal arrives.
+- On **NO**, automatically tries the next untried server; it asks again if that server also cannot be confirmed.
+- On **YES**, marks the server as working for the current session and remembers it as the last confirmed source.
+- After all servers are tried, offers **Retry servers** or **Choose manually**.
+
+Important browser limitation: a website cannot inspect whether a cross-origin iframe's video is visibly playing or producing sound. An iframe `load` event only means its page loaded, not that the movie is playing. Therefore, actual automatic detection is possible only for providers that send supported playback/error messages; the confirmation prompt covers providers that do not expose playback status.
