@@ -119,3 +119,18 @@ To deploy this update:
 3. Redeploy the website to Vercel.
 
 The Edge Function uses the service-role key server-side only; it does not return account email addresses during identifier lookup.
+
+
+## Fix: display-name sign-in cannot reach the Edge Function
+
+The browser now calls the function using `sb.functions.invoke(...)`, rather than a hand-built fetch request. The project also includes `supabase/config.toml` with `verify_jwt = false` for `username-login`. This is required when the frontend uses a Supabase publishable key instead of a legacy JWT anon key. The function itself still verifies the supplied password through Supabase Auth and keeps the service-role key server-side.
+
+Deploy BOTH the function and its config:
+```bash
+supabase login
+supabase link --project-ref exwserhjbzzvxhjlclqf
+supabase functions deploy username-login
+```
+Then run the latest `supabase/upgrade.sql` in the Supabase SQL Editor if the display-name migration has not already been applied, and redeploy the website.
+
+Check Supabase Dashboard → Edge Functions → username-login → Logs if it still fails. Check that the function has the built-in `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` secrets. Do not place the service-role key in `js/config.js`.

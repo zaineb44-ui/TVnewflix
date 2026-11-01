@@ -33,22 +33,24 @@ async function signin(identifier,password){
   }
 
   try{
-    const response=await fetch(`${NEWFLIX_CONFIG.SUPABASE_URL}/functions/v1/username-login`,{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'apikey':NEWFLIX_CONFIG.SUPABASE_KEY,
-        'Authorization':`Bearer ${NEWFLIX_CONFIG.SUPABASE_KEY}`
-      },
-      body:JSON.stringify({identifier:value,password})
+    const {data:result,error:functionError}=await sb.functions.invoke('username-login',{
+      body:{identifier:value,password}
     });
-    const result=await response.json().catch(()=>({}));
-    if(!response.ok){
-      if(response.status===404)return {success:false,error:'No account was found with that username or display name.'};
-      if(response.status===409)return {success:false,error:'More than one account uses that display name. Please sign in with your unique username or email instead.'};
-      if(response.status===401)return {success:false,error:'Incorrect password.'};
-      if(response.status===429)return {success:false,error:'Too many attempts. Please wait a moment and try again.'};
-      return {success:false,error:result.error||'Username/display-name sign-in is not configured. Run the database migration and deploy the username-login function.'};
+    if(functionError){
+      console.error('Identifier login function error:',functionError);
+      const context=functionError.context;
+      let serverMessage='';
+      try{
+        if(context && typeof context.json==='function'){
+          const body=await context.json();
+          serverMessage=body?.error||'';
+        }
+      }catch(_){}
+      return {success:false,error:serverMessage||'Could not reach the sign-in service. Make sure the username-login Edge Function is deployed and its settings are correct.'};
+    }
+    // The Edge Function returns HTTP errors through functionError above.
+    if(!result){
+      return {success:false,error:'The sign-in service returned an empty response. Please try again.'};
     }
     if(!result.session)return {success:false,error:'Sign-in did not return a session. Please try again.'};
     const {data,error}=await sb.auth.setSession({
