@@ -134,3 +134,17 @@ supabase functions deploy username-login
 Then run the latest `supabase/upgrade.sql` in the Supabase SQL Editor if the display-name migration has not already been applied, and redeploy the website.
 
 Check Supabase Dashboard → Edge Functions → username-login → Logs if it still fails. Check that the function has the built-in `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` secrets. Do not place the service-role key in `js/config.js`.
+
+## Vercel environment variables
+
+This is a static browser app, so Vercel environment variables are injected at build time into `js/config.js` by `scripts/generate-config.js`.
+
+In Vercel, open **Project → Settings → Environment Variables** and add:
+
+- `SUPABASE_URL` — your Supabase project URL
+- `SUPABASE_ANON_KEY` — your Supabase publishable key (an `sb_publishable_...` key is accepted)
+- `TMDB_API_KEY` — your TMDB API key
+
+Optional: `TMDB_API`, `TMDB_IMAGE`, and `TMDB_BACKDROP` have defaults and normally do not need to be set. Redeploy after changing environment variables. `.env.example` documents the expected names; do not commit a real `.env` file.
+
+Never add `SUPABASE_SERVICE_ROLE_KEY` to Vercel's browser-facing configuration. The `username-login` Edge Function uses Supabase's server-side secrets and must keep the service-role key inside Supabase.
