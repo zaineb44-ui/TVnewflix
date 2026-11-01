@@ -213,3 +213,42 @@ create trigger newflix_sync_auth_profile
 -- NOTE: The existing NewFlix profile-read policy is public. This migration
 -- follows that existing model; review profile RLS before using this project
 -- for sensitive/private user data.
+
+
+-- ============================================================
+-- SECURE USERNAME SIGN-IN INDEX
+-- Username -> user ID mapping is private. Only the Edge Function
+-- service-role client can read it; browser clients cannot.
+-- ============================================================
+create table if not exists public.newflix_username_index (
+  username text primary key,
+  user_id uuid not null unique references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+alter table public.newflix_username_index enable row level security;
+revoke all on table public.newflix_username_index from anon, authenticated;
+
+create or replace function public.newflix_sync_username_index()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare v_username text;
+begin
+  v_username := lower(trim(coalesce(new.raw_user_meta_data->>'username','')));
+  if v_username = '' then
+    delete from public.newflix_username_index where user_id = new.id;
+  else
+    if v_username !~ '^[a-z0-9_]{3,24}$' then raise exception 'Username must be 3–24 characters (letters, numbers or underscores)'; end if;
+    insert into public.newflix_username_index(username,user_id) values(v_username,new.id)
+    on conflict(user_id) do update set username=excluded.username;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists newflix_sync_username_index on auth.users;
+create trigger newflix_sync_username_index after insert or update of raw_user_meta_data on auth.users
+for each row execute function public.newflix_sync_username_index();
+
+-- Backfill usernames on accounts created before this migration.
+insert into public.newflix_username_index(username,user_id)
+select lower(trim(p.username)), p.id from public.profiles p join auth.users u on u.id=p.id
+where p.username is not null and lower(trim(p.username)) ~ '^[a-z0-9_]{3,24}$'
+on conflict do nothing;

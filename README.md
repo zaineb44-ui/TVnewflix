@@ -71,3 +71,16 @@ NewFlix cannot force a third-party iframe to a particular bitrate. For adaptive 
 
 ### Username sign-in note
 The username resolver reads the email stored on the existing `profiles` table. This project already allows public profile reads for its social features; the migration adds an email field to that same table. If you need private email addresses, change the profile RLS model and move username resolution to a rate-limited Supabase Edge Function before production use.
+
+
+## Username sign-in setup (required)
+
+Username sign-in resolves accounts on the server and does not expose email addresses to browser clients.
+
+1. In Supabase Dashboard → SQL Editor, run the complete updated `supabase/upgrade.sql`.
+2. Install the Supabase CLI and link this project to your Supabase project.
+3. Deploy the Edge Function: `supabase functions deploy username-login`.
+4. The hosted function uses Supabase's `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` environment variables. Never put the service-role key in website JavaScript.
+5. Test with an existing account username and its password. Email sign-in continues to work.
+
+The SQL migration backfills usernames from `profiles.username` for existing accounts. Confirm that each account has a username saved there before testing.
