@@ -60,3 +60,14 @@ Verified source strategy:
 - VidScene remains a fallback but can be frame-blocked in some networks, so it is ranked last in the normal player.
 
 NewFlix cannot force a third-party iframe to a particular bitrate. For adaptive providers, the embedded player itself selects video quality based on throughput.
+
+
+## Smart TV / remote-first update
+- Player opens with a full-screen server chooser; choose a source with the TV remote.
+- Selecting a server requests fullscreen immediately from the remote's OK/click gesture, then loads the stream. Browsers do not permit a page to force fullscreen later without a user gesture, so fullscreen cannot be guaranteed when playback begins automatically.
+- Arrow keys move focus between controls and scroll the page; OK/Enter activates; Back/Escape closes the server chooser or returns.
+- TV mode disables animation, blur, noise and other costly effects. Detected TV browsers default to the lightweight presentation and skip the large connection speed test.
+- Sign-in accepts either username or email. Run the updated `supabase/upgrade.sql` migration before using username sign-in. New accounts need a unique username.
+
+### Username sign-in note
+The username resolver reads the email stored on the existing `profiles` table. This project already allows public profile reads for its social features; the migration adds an email field to that same table. If you need private email addresses, change the profile RLS model and move username resolution to a rate-limited Supabase Edge Function before production use.

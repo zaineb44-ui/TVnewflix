@@ -80,6 +80,8 @@ const NewFlixNetwork=(()=>{
     running=(async()=>{
       const cached=readCache();if(!force&&cached&&Date.now()-Number(cached.testedAt||0)<CACHE_MS){apply(cached);return cached}
       const native=nativeSnapshot();
+      const tvDevice=/smart-tv|smarttv|hbbtv|tizen|web0s|webos|netcast|googletv|android tv|aftb|aftt|bravia|viera|roku|fire tv/i.test(navigator.userAgent||'');
+      if(tvDevice){return save({...native,mbps:native.mbps||null,mode:'lite',source:'smart-tv-optimized',testedAt:Date.now()})}
       // Native Network Information is instant and avoids wasting bandwidth on clearly slow/data-saver connections.
       if(native.saveData||['slow-2g','2g'].includes(native.effectiveType)){
         return save({...native,mode:'lite',source:'network-api',testedAt:Date.now()});

@@ -180,3 +180,25 @@ html[data-performance="lite"] .source-ping{box-shadow:none!important}
 .tv-mode .tv-mode-toggle{background:#332b12;border-color:#ffd45a;color:#ffe9a5}
 @media(min-width:1500px){.tv-mode .cards{grid-template-columns:repeat(auto-fill,minmax(245px,1fr))}}
 @media(prefers-reduced-motion:reduce){.tv-mode *, .tv-mode *::before,.tv-mode *::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* NewFlix Smart TV refinement: lean rendering and remote-first controls */
+.tv-mode{scroll-behavior:auto!important;--tv-focus:#ffe06a}
+.tv-mode *, .tv-mode *::before,.tv-mode *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+.tv-mode .ambient,.tv-mode .noise,.tv-mode .source-orbit .source-ping{display:none!important}
+.tv-mode .card,.tv-mode .panel,.tv-mode .hero,.tv-mode .player-wrap{backdrop-filter:none!important;box-shadow:none!important}
+.tv-mode .cards{grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:22px}
+.tv-mode button,.tv-mode a,.tv-mode input,.tv-mode select{touch-action:manipulation}
+.tv-mode :focus{outline:4px solid var(--tv-focus)!important;outline-offset:4px!important;z-index:50;position:relative}
+.tv-mode-toggle{position:fixed;right:22px;bottom:20px;z-index:9998;border:1px solid #6b5b26;border-radius:9px;background:#25200f;color:#ffe89a;padding:12px 17px;font:800 14px/1.1 Arial,sans-serif;cursor:pointer}
+.tv-server-overlay[hidden]{display:none!important}
+.tv-server-overlay{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.94);display:grid;place-items:center;padding:3vh 4vw}
+.tv-server-dialog{width:min(900px,94vw);max-height:90vh;overflow:auto;background:#10141d;border:1px solid #343d4c;border-radius:18px;padding:clamp(22px,3vw,42px);color:#fff}
+.tv-server-heading h2{font-size:clamp(28px,3.4vw,46px);margin:8px 0}.tv-server-heading p{color:#bac3d0;font-size:clamp(15px,1.35vw,19px);line-height:1.5;margin:0 0 24px}
+.tv-server-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tv-server-option{min-height:82px;display:flex;align-items:center;gap:16px;text-align:left;padding:15px 18px;border:2px solid #303949;border-radius:12px;background:#1a2230;color:white;cursor:pointer}
+.tv-server-option b{display:block;font-size:clamp(17px,1.6vw,22px)}.tv-server-option small{display:block;color:#aeb8c7;font-size:14px;margin-top:5px}.tv-server-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:10px;background:#343d50;color:#ffe06a;font-size:18px}.tv-server-check{margin-left:auto;font-size:26px;color:#ffe06a}
+.tv-server-option:focus,.tv-server-option:focus-visible{outline:4px solid #ffe06a!important;outline-offset:3px;border-color:#ffe06a;background:#303044;transform:scale(1.025)}
+.tv-server-footer{display:flex;gap:24px;flex-wrap:wrap;color:#9ca8b8;font-size:14px;margin-top:22px}
+.server-picker-open{overflow:hidden}
+.tv-mode .tv-server-dialog{box-shadow:none;backdrop-filter:none}
+@media(max-width:650px){.tv-server-options{grid-template-columns:1fr}.tv-server-dialog{width:96vw}.tv-server-footer{gap:12px}}

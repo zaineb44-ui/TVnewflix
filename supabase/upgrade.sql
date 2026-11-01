@@ -173,3 +173,43 @@ $$;
 
 revoke all on function public.newflix_delete_room(uuid) from public;
 grant execute on function public.newflix_delete_room(uuid) to authenticated;
+
+-- ============================================================
+-- USERNAME + EMAIL SIGN-IN SUPPORT
+-- Stores the auth email beside the public username so the static
+-- client can resolve username logins before calling Supabase Auth.
+-- ============================================================
+alter table public.profiles add column if not exists email text;
+create unique index if not exists newflix_profiles_username_unique
+  on public.profiles (lower(username)) where username is not null and username <> '';
+
+create or replace function public.newflix_sync_auth_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, username, display_name)
+  values (
+    new.id,
+    new.email,
+    nullif(lower(new.raw_user_meta_data->>'username'), ''),
+    coalesce(nullif(new.raw_user_meta_data->>'full_name',''), nullif(new.raw_user_meta_data->>'name',''))
+  )
+  on conflict (id) do update set
+    email = excluded.email,
+    username = coalesce(public.profiles.username, excluded.username),
+    display_name = coalesce(public.profiles.display_name, excluded.display_name);
+  return new;
+end;
+$$;
+
+drop trigger if exists newflix_sync_auth_profile on auth.users;
+create trigger newflix_sync_auth_profile
+  after insert or update of email, raw_user_meta_data on auth.users
+  for each row execute function public.newflix_sync_auth_profile();
+
+-- NOTE: The existing NewFlix profile-read policy is public. This migration
+-- follows that existing model; review profile RLS before using this project
+-- for sensitive/private user data.
